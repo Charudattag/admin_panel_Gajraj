@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./styles/common.scss";
 import ScrollToTop from "./Component/ScrollToTop/ScrollToTop";
-const Login = lazy(() => import("./screens/login/Login"));
+const Login = lazy(() => import("./screens/Login/Login"));
 const Layout = lazy(() => import("./Component/Layout/Layout"));
 const Dashboard = lazy(() => import("./screens/Dashboard/Dashboard"));
 const Overview = lazy(() => import("./screens/Overview/Overview"));
