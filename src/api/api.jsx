@@ -1,7 +1,8 @@
 import axios from "axios";
 
 // Base URL for the API
-const BASE_URL = "http://localhost:8000/api";
+// const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = "https://gajraj-backend-updated.onrender.com/api";
 // const WEBSITE_URL = "https://api.trekpanda.in/api";
 
 // Create an axios instance
