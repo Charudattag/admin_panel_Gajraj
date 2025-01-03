@@ -72,6 +72,11 @@ const menuItems = [
         path: "/subcategories",
         icon: FaClipboardList,
       },
+      {
+        label: "Rate_History",
+        path: "/ratehistory",
+        icon: FaClipboardList,
+      },
     ],
   },
   {

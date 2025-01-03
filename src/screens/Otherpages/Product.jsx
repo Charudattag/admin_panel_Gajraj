@@ -6,17 +6,23 @@ import {
   getAllproductsAPI,
   getAllcategoriesAPI,
   getAllSubcategoryByCategoryIdAPI,
+  updateProductAPI,
 } from "../../../src/api/api";
-import Footer from "./Footer";
+import { toast } from "react-toastify";
+import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 
 const AddProductForm = () => {
+  const navigate = useNavigate();
+
   const [showModal, setShowModal] = useState(false);
+  const [isEdit, setIsEdit] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [productData, setProductData] = useState({
+    id: "",
     name: "",
     category_id: "",
     subcategory_id: "",
@@ -26,49 +32,46 @@ const AddProductForm = () => {
     shipping: "",
     packaging: "",
     making_Charges: "",
-    making_charges_type: "percentage", // Default value for making charges type
+    making_charges_type: "percentage",
     type: "",
     GstPercentage: "",
   });
-  const navigate = useNavigate();
 
-  // Fetch products
+  // Fetch all products
   const fetchProducts = async () => {
     try {
-      const productsData = await getAllproductsAPI({});
-      setProducts(productsData?.data || []);
+      const response = await getAllproductsAPI({});
+      setProducts(response?.data || []);
     } catch (error) {
       console.error("Error fetching products:", error);
     }
   };
 
-  // Fetch categories
+  // Fetch all categories
   const fetchCategories = async () => {
     try {
-      const categoriesData = await getAllcategoriesAPI({});
-      if (categoriesData?.data) {
+      const response = await getAllcategoriesAPI({});
+      if (response?.data) {
         setCategories(
-          categoriesData.data.map((category) => ({
+          response.data.map((category) => ({
             value: category.id,
             label: category.name,
           }))
         );
       } else {
-        console.error("Invalid categories response format:", categoriesData);
+        console.error("Invalid categories response format:", response);
       }
     } catch (error) {
       console.error("Error fetching categories:", error);
     }
   };
 
-  // Fetch subcategories based on selected category
+  // Fetch subcategories by category ID
   const fetchSubcategories = async (categoryId) => {
     try {
-      const subcategoriesData = await getAllSubcategoryByCategoryIdAPI(
-        categoryId
-      );
+      const response = await getAllSubcategoryByCategoryIdAPI(categoryId);
       setSubcategories(
-        subcategoriesData?.data.map((subcategory) => ({
+        response?.data.map((subcategory) => ({
           value: subcategory.id,
           label: subcategory.name,
         })) || []
@@ -78,61 +81,125 @@ const AddProductForm = () => {
     }
   };
 
-  // Add product
-  const handleAddProduct = async (product) => {
+  // Add or update product
+  const handleAddOrUpdateProduct = async () => {
     try {
-      await addProductAPI(product);
-      fetchProducts(); // Refetch the products list after adding
-      setShowModal(false);
-      setProductData({
-        name: "",
-        category_id: "",
-        subcategory_id: "",
-        description: "",
-        stock: "",
-        Weight: "",
-        shipping: "",
-        packaging: "",
-        making_Charges: "",
-        making_charges_type: "percentage", // Reset default value
-        type: "",
-        GstPercentage: "",
-      });
+      console.log("Product data to be sent:", productData);
+
+      if (isEdit) {
+        if (!productData.id) {
+          console.error("Product ID is missing. Cannot update product.");
+          toast.error("Product ID is missing. Please try again.");
+          return;
+        }
+
+        await updateProductAPI(productData);
+        toast.success("Product updated successfully!");
+      } else {
+        await addProductAPI(productData);
+        toast.success("Product added successfully!");
+      }
+
+      fetchProducts();
+      handleCloseModal();
     } catch (error) {
-      console.error("Error adding product:", error);
+      console.error(
+        isEdit ? "Error updating product:" : "Error adding product:",
+        error
+      );
+      toast.error(
+        isEdit
+          ? "Error updating product. Please try again."
+          : "Error adding product. Please try again."
+      );
     }
   };
 
-  // Fetch data on mount
-  useEffect(() => {
-    fetchProducts();
-    fetchCategories();
-  }, []);
+  // Reset form data
+  const resetForm = () => {
+    setProductData({
+      id: "",
+      name: "",
+      category_id: "",
+      subcategory_id: "",
+      description: "",
+      stock: "",
+      Weight: "",
+      shipping: "",
+      packaging: "",
+      making_Charges: "",
+      making_charges_type: "percentage",
+      type: "",
+      GstPercentage: "",
+    });
+    setIsEdit(false);
+  };
 
-  // Modal Handlers
-  const handleShowModal = () => setShowModal(true);
-  const handleCloseModal = () => setShowModal(false);
+  // Handle modal close
+  const handleCloseModal = () => {
+    setShowModal(false);
+    resetForm();
+  };
+
+  // Handle modal open
+  const handleShowModal = () => {
+    setShowModal(true);
+  };
 
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setProductData({ ...productData, [name]: value });
+    setProductData((prevData) => ({ ...prevData, [name]: value }));
   };
 
+  // Handle category selection
   const handleCategoryChange = (e) => {
     const categoryId = e.target.value;
-    setProductData({
-      ...productData,
+    setProductData((prevData) => ({
+      ...prevData,
       category_id: categoryId,
       subcategory_id: "",
-    });
+    }));
     fetchSubcategories(categoryId);
   };
-
   const handleSubmit = (e) => {
     e.preventDefault();
-    handleAddProduct(productData);
+    handleAddOrUpdateProduct(productData);
   };
+
+  const handleEditProduct = (id) => {
+    console.log("Editing product with ID:", id);
+
+    const product = products.find((product) => product.id === id);
+
+    setIsEdit(true);
+    setShowModal(true);
+
+    if (product) {
+      setProductData({
+        id: id,
+        name: product.name,
+        category_id: product.category_id,
+        subcategory_id: product.subcategory_id,
+        description: product.description,
+        stock: product.stock,
+        Weight: product.Weight,
+        shipping: product.shipping,
+        packaging: product.packaging,
+        making_Charges: product.making_Charges,
+        making_charges_type: product.making_charges_type,
+        type: product.type,
+        GstPercentage: product.GstPercentage,
+      });
+    } else {
+      console.error("Product not found");
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+    fetchCategories();
+  }, []);
 
   return (
     <div className="container bg-white">
@@ -161,11 +228,11 @@ const AddProductForm = () => {
             <th>Name</th>
             <th>Weight</th>
             <th>Category</th>
-            <th>Subcategory</th>
+
             <th>Price</th>
-            <th>Making Charges</th>
-            <th>Packaging</th>
+
             <th>Actions</th>
+            <th>Image</th>
           </tr>
         </thead>
         <tbody>
@@ -179,26 +246,45 @@ const AddProductForm = () => {
                 >
                   {product.name}
                 </td>
-                <td>{product.Weight}</td>
-                <td>{product.category?.name}</td>
-                <td>{product.subcategory?.name}</td>
-                <td>{product.price}</td>
-                <td>{product.making_Charges}</td>
-                <td>{product.packaging}</td>
+                <td
+                  style={{ cursor: "pointer" }}
+                  onClick={() => navigate(`/productDetails/${product.id}`)}
+                >
+                  {product.Weight}
+                </td>
+                <td
+                  style={{ cursor: "pointer" }}
+                  onClick={() => navigate(`/productDetails/${product.id}`)}
+                >
+                  {product.category?.name}
+                </td>
+
+                <td
+                  style={{ cursor: "pointer" }}
+                  onClick={() => navigate(`/productDetails/${product.id}`)}
+                >
+                  {product.price}
+                </td>
+
                 <td>
                   <Button
                     variant="link"
                     className="p-0 text-decoration-none"
-                    onClick={handleShowModal}
+                    onClick={() => handleEditProduct(product.id)}
                   >
                     <FaEdit size={20} className="text-primary" />
                   </Button>
+                </td>
+                <td>
+                  <Link to={`/addproductImage/${product.id}`}>
+                    <Button>Add Image</Button>
+                  </Link>
                 </td>
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan="9" className="text-center">
+              <td colSpan="11" className="text-center">
                 No products found
               </td>
             </tr>
@@ -256,7 +342,6 @@ const AddProductForm = () => {
               </Form.Select>
             </Form.Group>
 
-            {/* New Making Charges Type Field */}
             <Form.Group className="mb-3">
               <Form.Label>Making Charges Type</Form.Label>
               <Form.Select
@@ -269,7 +354,19 @@ const AddProductForm = () => {
               </Form.Select>
             </Form.Group>
 
-            {/* Other fields */}
+            <Form.Group className="mb-3">
+              <Form.Label>Type</Form.Label>
+              <Form.Select
+                name="type"
+                value={productData.type}
+                onChange={handleInputChange}
+              >
+                <option value="">Select type</option>
+                <option value="Gold">Gold</option>
+                <option value="Silver">Silver</option>
+              </Form.Select>
+            </Form.Group>
+
             {[
               "Weight",
               "description",
@@ -277,7 +374,6 @@ const AddProductForm = () => {
               "shipping",
               "packaging",
               "making_Charges",
-              "type",
               "GstPercentage",
             ].map((field) => (
               <Form.Group className="mb-3" key={field}>
@@ -292,14 +388,12 @@ const AddProductForm = () => {
               </Form.Group>
             ))}
 
-            <Button variant="primary" type="submit" className="w-100">
+            <Button variant="primary" type="submit">
               Add Product
             </Button>
           </Form>
         </Modal.Body>
       </Modal>
-
-      <Footer />
     </div>
   );
 };
