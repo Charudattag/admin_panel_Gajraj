@@ -1,6 +1,8 @@
 import React, { Suspense, lazy } from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import "./styles/common.scss";
 import ScrollToTop from "./Component/ScrollToTop/ScrollToTop";
 const Login = lazy(() => import("./screens/Login/Login"));
@@ -18,6 +20,11 @@ const ProductDetails = lazy(() =>
   import("./screens/Otherpages/ProductDetails")
 );
 const ProductRate = lazy(() => import("./screens/Otherpages/ProductRate"));
+const Ratehistory = lazy(() => import("./screens/Otherpages/Ratehistory"));
+const BannerImage = lazy(() => import("./screens/Otherpages/BannerImage"));
+const AddproductImage = lazy(() =>
+  import("./screens/Otherpages/Addimageproduct")
+);
 
 function App() {
   return (
@@ -41,8 +48,15 @@ function App() {
             <Route path="orders" element={<Orders />} />
             <Route path="productDetails/:id" element={<ProductDetails />} />
             <Route path="productRate" element={<ProductRate />} />
+            <Route path="ratehistory" element={<Ratehistory />} />
+            <Route path="bannerImage/:bannerId" element={<BannerImage />} />
+            <Route
+              path="addproductImage/:productId"
+              element={<AddproductImage />}
+            />
           </Route>
         </Routes>
+        <ToastContainer />
       </Suspense>
     </Router>
   );

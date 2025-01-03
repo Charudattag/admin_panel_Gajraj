@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Container,
   Row,
@@ -8,34 +8,48 @@ import {
   Form,
   Card,
   Image,
+  Spinner,
 } from "react-bootstrap";
-import { useNavigate } from "react-router-dom";
-import { FaEdit, FaRupeeSign } from "react-icons/fa";
+import { useNavigate, useParams } from "react-router-dom";
+import { FaEdit, FaRupeeSign, FaWeight } from "react-icons/fa";
 import Footer from "./Footer";
-
-// Import images
-import Image1 from "../../assets/Ring.jpg";
-import Image2 from "../../assets/Bengals.jpg";
-import Image3 from "../../assets/earings.jpg";
-import Image4 from "../../assets/mangalsutra_1.jpg";
+import { getProductByIdAPI } from "../../../src/api/api";
 
 const ProductDetails = () => {
-  const [showModal, setShowModal] = useState(false);
-  const [product, setProduct] = useState({
-    name: "Diamond Ring",
-    price: "23.12",
-    weight: "500g",
-    details:
-      'A "diamond ring" refers to a ring featuring a single diamond as the centerpiece, typically set in a simple band, with the focus solely on the diamond itself; often called a "solitaire" ring, signifying its solitary diamond design.',
-    images: [Image1, Image2, Image3, Image4],
-  });
-  const [editedProduct, setEditedProduct] = useState({ ...product });
+  const [product, setProduct] = useState(null); // Product details state
+  const [editedProduct, setEditedProduct] = useState(null); // Edited product state
+  const [showModal, setShowModal] = useState(false); // Modal visibility
+  const [loading, setLoading] = useState(true); // Loading state
+  const [error, setError] = useState(null); // Error state
 
+  const { id } = useParams(); // Get product ID from URL
   const navigate = useNavigate();
+
+  // Fetch product data when the component loads
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        setLoading(true);
+        const response = await getProductByIdAPI(id); // Call the API
+        if (response.success) {
+          setProduct(response.data); // Update product state
+          setEditedProduct(response.data); // Initialize editedProduct
+        } else {
+          setError(response.message || "Failed to fetch product.");
+        }
+      } catch (err) {
+        setError("An error occurred while fetching the product.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id]);
 
   const handleOpenModal = () => setShowModal(true);
   const handleCloseModal = () => {
-    setEditedProduct({ ...product });
+    setEditedProduct({ ...product }); // Reset changes
     setShowModal(false);
   };
 
@@ -49,8 +63,28 @@ const ProductDetails = () => {
     setEditedProduct({ ...editedProduct, [name]: value });
   };
 
+  if (loading) {
+    return (
+      <Container className="mt-4 text-center">
+        <Spinner animation="border" variant="primary" />
+        <p>Loading product details...</p>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container className="mt-4 text-center">
+        <p className="text-danger">{error}</p>
+        <Button variant="primary" onClick={() => navigate(-1)}>
+          Go Back
+        </Button>
+      </Container>
+    );
+  }
+
   return (
-    <Container className="mt-4">
+    <Container className="mt-2">
       <Card
         className="shadow-sm border-0"
         style={{
@@ -60,61 +94,115 @@ const ProductDetails = () => {
       >
         <Card.Body>
           <Row className="align-items-center">
-            <Col>
-              {/* Back button */}
+            <Col xs={12} className="text-end mb-3">
               <span
-                style={{
-                  cursor: "pointer",
-
-                  float: "right",
-                }}
+                style={{ cursor: "pointer" }}
                 onClick={() => navigate("/product")}
               >
                 Back
               </span>
-              <h2 className="fw-bold mb-3 mt-5">
+            </Col>
+
+            <Col xs={12} md={6}>
+              <h1 className="fw-bold mb-3" style={{ color: "#CB9B06" }}>
                 {product.name}
-                <FaEdit
-                  className="float-end text-warning"
-                  style={{ cursor: "pointer", fontSize: "1.5rem" }}
-                  onClick={handleOpenModal}
-                />
-              </h2>
+              </h1>
               <div className="mb-3">
-                <span className="text-muted fs-5">Price: </span>
-                <span className="text-success fw-bold fs-4">
+                <span className="text-success fw-bold  fs-4">Price: </span>
+                <span className="text-black  fs-5">
                   <FaRupeeSign />
-                  {product.price}
+                  {product.price.toFixed(2)}
+                </span>
+              </div>
+
+              <div className="mb-3">
+                <span className="text-success  fw-bold  fs-4">Weight: </span>
+                <span className="text-black fs-5">{product.Weight}g</span>
+              </div>
+              <div className="mb-3">
+                <span className="text-success  fw-bold  fs-4">Category: </span>
+                <span className="text-black  fs-5">
+                  {product.category.name}
                 </span>
               </div>
               <div className="mb-3">
-                <h5 className="text-muted">Weight</h5>
-                <span className="text-danger fw-bold fs-5">
-                  {product.weight}
+                <span className="text-success fw-bold  fs-4">
+                  MakingCharges:{" "}
+                </span>
+                <span className="text-black fw-bold fs-5">
+                  {product.making_Charges}
                 </span>
               </div>
             </Col>
+
+            <Col xs={12} md={6}>
+              <div className="container">
+                <div className="mb-3">
+                  <span className="text-success fw-bold fs-4">
+                    SubCategory:{" "}
+                  </span>
+                  <span className="text-black fs-5">
+                    {product.subcategory.name}
+                  </span>
+                </div>
+                <div className="mb-3">
+                  <span className="text-success fw-bold  fs-4">Shipping: </span>
+                  <span className="text-black  fs-5">
+                    <i>
+                      <FaRupeeSign />
+                    </i>
+                    {product.shipping}
+                  </span>
+                </div>
+                <div className="mb-3">
+                  <span className="text-success fw-bold  fs-4">
+                    Packaging:{" "}
+                  </span>
+                  <span className="text-black  fs-5">
+                    <i>
+                      <FaRupeeSign />
+                    </i>
+                    {product.packaging}
+                  </span>
+                </div>
+              </div>
+            </Col>
           </Row>
+
           <Row className="mt-4">
             <Col>
-              <h4 className="text-muted">Details</h4>
-              <p className="text-dark">{product.details}</p>
+              <h4 className="text-black">Details</h4>
+              <h5 className="type" style={{ color: "#CB9B06" }}>
+                {product.type}
+              </h5>
             </Col>
           </Row>
+
           <Row className="mt-4">
             <Col>
               <h4 className="text-muted">Images</h4>
-              <div className="d-flex gap-3">
-                {product.images.map((image, index) => (
-                  <Image
-                    key={index}
-                    src={image}
-                    alt={`Product Thumbnail ${index + 1}`}
-                    thumbnail
-                    style={{ width: "150px", height: "150px" }}
-                  />
-                ))}
+              <div className="d-flex gap-3 flex-wrap">
+                {product.ProductImages.length > 0 ? (
+                  product.ProductImages.map((image, index) => (
+                    <Image
+                      key={index}
+                      src={`http://localhost:8000/uploads/${image.image}`}
+                      alt={`Product Thumbnail ${index + 1}`}
+                      thumbnail
+                      style={{ width: "150px", height: "150px" }}
+                    />
+                  ))
+                ) : (
+                  <p className="text-muted">No images available</p>
+                )}
               </div>
+            </Col>
+            <Col xs={12} className="mt-4 text-end">
+              <FaEdit
+                className="text-warning"
+                style={{ cursor: "pointer", fontSize: "1.5rem" }}
+                onClick={handleOpenModal}
+              />
             </Col>
           </Row>
         </Card.Body>
@@ -149,8 +237,8 @@ const ProductDetails = () => {
               <Form.Label>Weight</Form.Label>
               <Form.Control
                 type="text"
-                name="weight"
-                value={editedProduct.weight}
+                name="Weight"
+                value={editedProduct.Weight}
                 onChange={handleChange}
               />
             </Form.Group>
@@ -159,8 +247,8 @@ const ProductDetails = () => {
               <Form.Control
                 as="textarea"
                 rows={3}
-                name="details"
-                value={editedProduct.details}
+                name="description"
+                value={editedProduct.description}
                 onChange={handleChange}
               />
             </Form.Group>

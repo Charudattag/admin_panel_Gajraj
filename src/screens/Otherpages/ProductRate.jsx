@@ -2,7 +2,11 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button, Form, Modal, Table } from "react-bootstrap";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { addRateAPI, getlatestAllRatesAPI } from "../../../src/api/api";
+import {
+  addRateAPI,
+  getlatestAllRatesAPI,
+  updateProductRateAPI,
+} from "../../../src/api/api";
 import { FaPlus } from "react-icons/fa";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -34,11 +38,29 @@ const AddRatePage = () => {
   // Extract rates from the API response
   const rates = response?.data || [];
 
-  // Mutation for adding/updating rates
-  const mutation = useMutation({
+  // Mutation for adding rates
+  const addMutation = useMutation({
     mutationFn: addRateAPI,
     onSuccess: (data) => {
-      toast.success(data.message || "Rate added/updated successfully!");
+      toast.success(data.message || "Rate added successfully!");
+      setShowModal(false);
+      reset();
+      refetch(); // Refetch data after mutation
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.message || "An error occurred.");
+      setLoading(false);
+    },
+    onSettled: () => {
+      setLoading(false);
+    },
+  });
+
+  // Mutation for updating rates
+  const updateMutation = useMutation({
+    mutationFn: updateProductRateAPI,
+    onSuccess: (data) => {
+      toast.success(data.message || "Rate updated successfully!");
       setShowModal(false);
       reset();
       refetch(); // Refetch data after mutation
@@ -55,11 +77,20 @@ const AddRatePage = () => {
   const onSubmit = async (data) => {
     setLoading(true);
     try {
-      await mutation.mutateAsync({
-        Gold: data.Gold,
-        Silver: data.Silver,
-        id: editRate?.id, // Include `id` if updating
-      });
+      if (editRate) {
+        // Update rate
+        await updateMutation.mutateAsync({
+          id: editRate.id,
+          Gold: data.Gold,
+          Silver: data.Silver,
+        });
+      } else {
+        // Add new rate
+        await addMutation.mutateAsync({
+          Gold: data.Gold,
+          Silver: data.Silver,
+        });
+      }
       setLoading(false);
     } catch (error) {
       setLoading(false);
@@ -86,8 +117,7 @@ const AddRatePage = () => {
           onClick={() => handleShowModal()}
           style={{ marginLeft: "90%" }}
         >
-          <FaPlus />
-          Add Rate
+          <FaPlus /> Add Rate
         </Button>
         {isLoading ? (
           <p>Loading rates...</p>

@@ -1,8 +1,8 @@
 import axios from "axios";
 
 // Base URL for the API
-// const BASE_URL = "http://localhost:8000/api";
-const BASE_URL = "https://gajraj-backend-updated.onrender.com/api";
+const BASE_URL = "http://localhost:8000/api";
+// const BASE_URL = "https://gajraj-backend-updated.onrender.com/api";
 // const WEBSITE_URL = "https://api.trekpanda.in/api";
 
 // Create an axios instance
@@ -57,76 +57,93 @@ export const registerUserAPI = (userData) =>
 export const addBannerAPI = (userData) =>
   apiRequest("/banner/addBanner", userData, "post");
 
+export const getAllBannerAPI = (payload) =>
+  apiRequest("/banner/getAllBanners", payload, "get");
+
+export const updateBannerAPI = ({ id, ...data }) =>
+  apiRequest(`/banner/updateBanner/${id}`, data, "post");
+
+export const updateProductImageAPI = (data) =>
+  apiRequest(`/productimage/updateProductImage`, data, "post");
+
+export const getByBannerIdAPI = (bannerId) =>
+  apiRequest(`/productimage/getByBannerId/${bannerId}`, null, "get");
+
+export const deleteBannerAPI = (id) =>
+  apiRequest(`/banner/deleteBanner/${id}`, "post");
+
+export const toggleBannerStatusApi = (id) =>
+  apiRequest(`/banner/toggleBannerStatus/${id}`, "post");
+export const deleteProductImageAPI = (id) =>
+  apiRequest(`/productimage/deleteProductImage/${id}`, null, "delete");
+
+export const uploadImageAPI = (userData) =>
+  apiRequest("/productimage/addProductImages", userData, "post");
+
+// All Rate API
 export const addRateAPI = (userData) =>
   apiRequest("/productrate/addRate", userData, "post");
 
-export const getlatestAllRatesAPI = (payload) =>
+export const getAllratehistoryAPI = (payload) =>
   apiRequest("/productrate/getAllRates", payload, "get");
+
+export const getlatestAllRatesAPI = (payload) =>
+  apiRequest("/productrate/getAlllatest", payload, "get");
 
 export const updateRatesAPI = ({ id, ...data }) =>
   apiRequest(`/productrate/updateRate/${id}`, data, "post");
 
+//  ALL Product API
 export const addProductAPI = (userData) =>
   apiRequest(`/product/addProduct`, userData, "post");
+
+export const updateProductAPI = ({ id, ...data }) =>
+  apiRequest(`/product/updatebyid/${id}`, data, "post");
 
 export const getAllproductsAPI = (payload) =>
   apiRequest("/product/getallproducts", payload, "get");
 
-export const updateProductAPI = ({ id, ...data }) =>
-  apiRequest(`/productrate/updateRate/${id}`, data, "post");
+// update rate api
+export const updateProductRateAPI = ({ id, ...data }) =>
+  apiRequest(`/product/updateRate/${id}`, data, "post");
+
+export const getByproductIdAPI = (productId) =>
+  apiRequest(`/productimage/getByProductId/${productId}`, null, "get");
+
+export const getProductByIdAPI = (id) =>
+  apiRequest(`/product/getProductById/${id}`, null, "get");
+
+// all category API
+export const addCategoryAPI = (userData) =>
+  apiRequest(`/category/addCategory`, userData, "post");
+
+export const updateCategoryAPI = ({ id, ...data }) =>
+  apiRequest(`/category/updateCategory/${id}`, data, "post");
 
 export const getAllcategoriesAPI = (payload) =>
   apiRequest("/category/getAllCategories", payload, "get");
 
+// Subcategory API
 export const getAllSubcategoriesAPI = (payload) =>
   apiRequest("/subcategory/getAllSubcategories", payload, "get");
 
 export const getAllSubcategoryByCategoryIdAPI = (id) =>
   apiRequest(`/subcategory/getAllSubcategoryByCategoryId/${id}`, null, "get");
 
-// export const getUserByUserId = (id) =>
-//   apiRequest(`/users/getUserByUserId/${id}`, null, "get");
+export const addSubcategopryAPI = (userData) =>
+  apiRequest("/subcategory/addSubcategory", userData, "post");
 
-// export const updateUserAPI = (userData) =>
-//   apiRequest("/users/updateProfile", userData);
+export const updateSubcategoryAPI = ({ id, ...data }) =>
+  apiRequest(`/subcategory/updateSubcategory/${id}`, data, "post");
 
-// // Money APIs
-// export const addMoneyAPI = (userData) =>
-//   apiRequest("/money/addMoney", userData);
+export const addCustomerAPI = (userData) =>
+  apiRequest(`/customer/createcustomer`, userData, "post");
 
-// export const getMoneyByIdAPI = (mobile) =>
-//   apiRequest(`/money/getMoneyByMobile/${mobile}`, null, "get");
+export const getAllCustomerAPI = (payload) =>
+  apiRequest("/customer/getallcustomers", payload, "get");
 
-// export const deleteMoneyAPI = (id) =>
-//   apiRequest(`/money/deleteentry/${id}`, null);
+export const getAllOrderAPI = (payload) =>
+  apiRequest("/orderitems/getAllOrderItems", payload, "get");
 
-// // Project APIs
-// export const addProjectAPI = (userData) =>
-//   apiRequest("/projects/addProject", userData);
-
-// export const getProjectsAPI = (payload) =>
-//   apiRequest("/projects/getallproject", payload, "get");
-
-// export const getProjectById = (id) =>
-//   apiRequest(`/projects/getprojectbyid/${id}`, null, "get");
-
-// // Vehicle APIs
-// export const addVehicleAPI = (userData) =>
-//   apiRequest("/vehicle/addVehicle", userData);
-
-// export const getVehicleAPI = (payload) =>
-//   apiRequest("/vehicle/getallVehicle", payload, "get");
-
-// export const getVehicleById = (id) =>
-//   apiRequest(`/vehicle/getvehiclebyid/${id}`, null, "get");
-
-// export const updateFuelLogAPI = (id, updatedData) =>
-//   apiRequest(`/fuellog/updateFuelLog/${id}`, updatedData);
-
-// export const getFuelLogsAPI = (payload) =>
-//   apiRequest(`/fuellog/getallFulllog`, payload, "get");
-
-// export const deleteFuelLogAPI = (id) =>
-//   apiRequest(`/fuellog/deletefuellog/${id}`, null);
-
-// // Lead APIs
+export const updateOrderstatusAPI = ({ orderItemId, ...data }) =>
+  apiRequest(`/orderitems/updateOrderItemStatus/${orderItemId}`, data, "post");

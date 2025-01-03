@@ -1,137 +1,190 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Modal, Button, Table } from "react-bootstrap";
 import { FaPlus } from "react-icons/fa";
 import { RiDeleteBin4Fill, RiEdit2Fill } from "react-icons/ri";
+import { toast } from "react-toastify";
 import Footer from "./Footer";
+import {
+  addBannerAPI,
+  getAllBannerAPI,
+  updateBannerAPI,
+  deleteBannerAPI,
+  uploadImageAPI, // Add the API function to handle image uploads
+  toggleBannerStatusApi, // Import toggleBannerStatusApi
+} from "../../../src/api/api";
+import { Link } from "react-router-dom";
 
 function Banners() {
-  const [projects, setProjects] = useState([
-    {
-      title: "Banner 1",
-      image: "src/assets/Banner 1.jpg",
-      link: "Link A",
-
-      images: [{ file: null, url: "src/assets/Banner 1.jpg" }],
-    },
-    {
-      title: "Banner 2",
-      image: "src/assets/Banner 2.jpg",
-      link: "Link B",
-
-      images: [{ file: null, url: "src/assets/Banner 2.jpg" }],
-    },
-  ]);
-
+  const [banners, setBanners] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [showImageModal, setShowImageModal] = useState(false);
-  const [newProject, setNewProject] = useState({
+  const [showImageModal, setShowImageModal] = useState(false); // State for image upload modal
+  const [editMode, setEditMode] = useState(false);
+  const [formData, setFormData] = useState({
     title: "",
-    image: "",
-
+    subTitle: "",
+    text: "",
     link: "",
-    images: [],
   });
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-  const [selectedProjectIndex, setSelectedProjectIndex] = useState(null);
-  const fileInputRefs = useRef([]);
+  const [selectedBannerId, setSelectedBannerId] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null); // State for the selected image
 
-  // Pagination logic
-  const totalPages = Math.ceil(projects.length / itemsPerPage);
-  const currentProjects = projects.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  // Handlers for project modal
-  const handleProjectInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewProject({ ...newProject, [name]: value });
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setNewProject({ ...newProject, image: reader.result });
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleAddOrUpdateProject = () => {
-    if (selectedProjectIndex !== null) {
-      const updatedProjects = projects.map((proj, index) =>
-        index === selectedProjectIndex ? newProject : proj
-      );
-      setProjects(updatedProjects);
-    } else {
-      setProjects([...projects, newProject]);
+  const fetchBanners = useCallback(async () => {
+    try {
+      const bannersData = await getAllBannerAPI();
+      if (bannersData?.data) {
+        setBanners(bannersData.data);
+      } else {
+        console.error("Invalid banners response format:", bannersData);
+      }
+    } catch (error) {
+      console.error("Error fetching banners:", error);
     }
-    setNewProject({
-      title: "",
-      image: "",
+  }, []);
 
-      link: "",
-      images: [],
-    });
-    setSelectedProjectIndex(null);
+  useEffect(() => {
+    fetchBanners();
+  }, [fetchBanners]);
+
+  const handleShowModal = () => setShowModal(true);
+  const handleCloseModal = () => {
     setShowModal(false);
+    setEditMode(false);
+    setFormData({
+      title: "",
+      subTitle: "",
+      text: "",
+      link: "",
+    });
+    setSelectedBannerId(null);
   };
 
-  const handleEditProject = (index) => {
-    setNewProject(projects[index]);
-    setSelectedProjectIndex(index);
-    setShowModal(true);
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleDeleteProject = (index) => {
-    setProjects(projects.filter((_, i) => i !== index));
-  };
+  const handleAddBanner = async () => {
+    if (
+      !formData.title ||
+      !formData.subTitle ||
+      !formData.text ||
+      !formData.link
+    ) {
+      toast.error("All fields are required");
+      return;
+    }
 
-  // Handlers for image modal
-  const handleFileInputTrigger = (imageIndex) => {
-    if (fileInputRefs.current[imageIndex]) {
-      fileInputRefs.current[imageIndex].click();
+    try {
+      const response = await addBannerAPI(formData);
+      if (response?.status === 201) {
+        fetchBanners();
+        handleCloseModal();
+        toast.success("Banner added successfully");
+      }
+    } catch (error) {
+      console.error("Error adding banner:", error);
+      toast.error("An error occurred while adding the banner");
     }
   };
 
-  const handleImageUpdate = (imageIndex, event) => {
-    const file = event.target.files[0];
-    const updatedImage = { file: file, url: URL.createObjectURL(file) };
-
-    const updatedProjects = projects.map((proj, index) =>
-      index === selectedProjectIndex
-        ? {
-            ...proj,
-            images: proj.images.map((img, i) =>
-              i === imageIndex ? updatedImage : img
-            ),
-          }
-        : proj
-    );
-    setProjects(updatedProjects);
+  const handleEditBanner = (banner) => {
+    setEditMode(true);
+    setSelectedBannerId(banner.id);
+    setFormData({
+      title: banner.title,
+      subTitle: banner.subTitle,
+      text: banner.text,
+      link: banner.link,
+    });
+    handleShowModal();
   };
 
-  const handleDeleteImage = (imageIndex) => {
-    const updatedProjects = projects.map((proj, index) =>
-      index === selectedProjectIndex
-        ? { ...proj, images: proj.images.filter((_, i) => i !== imageIndex) }
-        : proj
-    );
-    setProjects(updatedProjects);
+  const handleUpdateBanner = async () => {
+    if (
+      !formData.title ||
+      !formData.subTitle ||
+      !formData.text ||
+      !formData.link
+    ) {
+      toast.error("All fields are required");
+      return;
+    }
+
+    try {
+      const response = await updateBannerAPI({
+        id: selectedBannerId,
+        ...formData,
+      });
+      response?.success;
+
+      fetchBanners();
+      handleCloseModal();
+      toast.success("Banner updated successfully");
+    } catch (error) {
+      console.error("Error updating banner:", error);
+      toast.error("An error occurred while updating the banner");
+    }
   };
 
-  const handleAddImage = (e) => {
-    const file = e.target.files[0];
-    const newImage = { file: file, url: URL.createObjectURL(file) };
+  const handleDeleteBanner = async (id) => {
+    try {
+      const response = await deleteBannerAPI(id);
+      if (response?.success) {
+        toast.success("Banner deleted successfully");
+        fetchBanners();
+      } else {
+        toast.error(response?.error || "Failed to delete banner");
+      }
+    } catch (error) {
+      console.error("Error deleting banner:", error);
+      toast.error("An error occurred while deleting the banner");
+    }
+  };
 
-    const updatedProjects = projects.map((proj, index) =>
-      index === selectedProjectIndex
-        ? { ...proj, images: [...proj.images, newImage] }
-        : proj
-    );
-    setProjects(updatedProjects);
+  const handleImageChange = (e) => {
+    setSelectedImage(e.target.files[0]); // Set the selected image
+  };
+
+  const handleUploadImage = async () => {
+    if (!selectedImage) {
+      toast.error("No image selected");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("images", selectedImage);
+    formData.append("bannerId", selectedBannerId);
+
+    try {
+      const response = await uploadImageAPI(formData);
+      response?.success;
+
+      setShowImageModal(false);
+      fetchBanners();
+      toast.success("Image uploaded successfully");
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast.error("An error occurred while uploading the image");
+    }
+  };
+
+  // Handle toggle for is_active
+  const handleToggleBannerStatus = async (id, currentStatus) => {
+    try {
+      const response = await toggleBannerStatusApi(id, currentStatus);
+      if (response?.success) {
+        fetchBanners();
+        toast.success(
+          `Banner status updated to ${currentStatus ? "inactive" : "active"}`
+        );
+      } else {
+        toast.error("Failed to update banner status");
+      }
+    } catch (error) {
+      console.error("Error toggling banner status:", error);
+      toast.error("An error occurred while updating the banner status");
+    }
   };
 
   return (
@@ -139,58 +192,55 @@ function Banners() {
       <h2 className="text-left mb-4">Banner Management</h2>
       <Button
         variant="primary"
-        onClick={() => {
-          setShowModal(true);
-          setSelectedProjectIndex(null);
-        }}
+        onClick={handleShowModal}
         className="mb-3 d-flex gap-2"
         style={{ marginLeft: "85%" }}
       >
         <FaPlus />
-        Add Banners
+        Add Banner
       </Button>
 
       <Table bordered>
         <thead>
           <tr>
             <th>Title</th>
-            <th>image</th>
+            <th>Subtitle</th>
             <th>Link</th>
-            <th>Images</th>
+            <th>Text</th>
+            <th>Status</th> {/* New Status Column */}
+            <th>Modify Images</th>
             <th>Modify</th>
           </tr>
         </thead>
         <tbody>
-          {currentProjects.map((project, index) => (
+          {banners.map((banner, index) => (
             <tr key={index}>
-              <td>{project.title}</td>
+              <td>{banner.title}</td>
+              <td>{banner.subTitle}</td>
+              <td>{banner.text}</td>
+              <td>{banner.link}</td>
+
+              {/* Status Checkbox */}
               <td>
-                <img
-                  src={project.image}
-                  alt={project.title}
-                  className="img-fluid"
-                  style={{ maxWidth: 100 }}
+                <input
+                  type="checkbox"
+                  checked={banner.is_active}
+                  onChange={() =>
+                    handleToggleBannerStatus(banner.id, banner.is_active)
+                  }
                 />
               </td>
 
-              <td>{project.link}</td>
               <td>
-                <Button
-                  variant="info"
-                  onClick={() => {
-                    setShowImageModal(true);
-                    setSelectedProjectIndex(index);
-                  }}
-                  style={{ color: "#fff" }}
-                >
-                  Manage Images
-                </Button>
+                <Link to={`/bannerImage/${banner.id}`}>
+                  <Button>Add Image</Button>
+                </Link>
               </td>
               <td>
                 <div className="d-flex gap-1">
                   <Button
                     variant="warning"
-                    onClick={() => handleEditProject(index)}
+                    onClick={() => handleEditBanner(banner)}
                     className="me-2"
                     style={{ color: "#fff" }}
                   >
@@ -198,7 +248,7 @@ function Banners() {
                   </Button>
                   <Button
                     variant="danger"
-                    onClick={() => handleDeleteProject(index)}
+                    onClick={() => handleDeleteBanner(banner.id)}
                   >
                     <RiDeleteBin4Fill />
                   </Button>
@@ -209,36 +259,11 @@ function Banners() {
         </tbody>
       </Table>
 
-      {/* Pagination Controls */}
-      <div className="d-flex justify-content-between align-items-center">
-        <div className="d-flex gap-2">
-          <Button
-            variant="secondary"
-            onClick={() => setCurrentPage(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => setCurrentPage(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </Button>
-        </div>
-        <span>
-          Page {currentPage} of {totalPages}
-        </span>
-      </div>
-
-      {/* Project Modal */}
-      <Modal show={showModal} onHide={() => setShowModal(false)}>
+      {/* Banner Modal */}
+      <Modal show={showModal} onHide={handleCloseModal}>
         <Modal.Header closeButton>
           <Modal.Title>
-            {selectedProjectIndex !== null
-              ? "Update Project"
-              : "Add New Project"}
+            {editMode ? "Update Banner" : "Add New Banner"}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -251,134 +276,92 @@ function Banners() {
               className="form-control"
               id="title"
               name="title"
-              value={newProject.title}
-              onChange={handleProjectInputChange}
+              value={formData.title}
+              onChange={handleInputChange}
             />
           </div>
           <div className="mb-3">
-            <label htmlFor="image" className="form-label">
-              image
+            <label htmlFor="subTitle" className="form-label">
+              SubTitle
             </label>
             <input
-              type="file"
+              type="text"
               className="form-control"
-              id="image"
-              accept="image/*"
-              onChange={handleFileChange}
+              id="subTitle"
+              name="subTitle"
+              value={formData.subTitle}
+              onChange={handleInputChange}
             />
           </div>
-
+          <div className="mb-3">
+            <label htmlFor="text" className="form-label">
+              Text
+            </label>
+            <textarea
+              className="form-control"
+              id="text"
+              name="text"
+              rows="3"
+              value={formData.text}
+              onChange={handleInputChange}
+            ></textarea>
+          </div>
           <div className="mb-3">
             <label htmlFor="link" className="form-label">
               Link
             </label>
-            <textarea
+            <input
+              type="text"
               className="form-control"
               id="link"
               name="link"
-              rows="3"
-              value={newProject.link}
-              onChange={handleProjectInputChange}
-            ></textarea>
+              value={formData.link}
+              onChange={handleInputChange}
+            />
           </div>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>
+          <Button variant="secondary" onClick={handleCloseModal}>
             Close
           </Button>
-          <Button variant="primary" onClick={handleAddOrUpdateProject}>
-            {selectedProjectIndex !== null ? "Update" : "Add"} Banner
+          {editMode ? (
+            <Button variant="primary" onClick={handleUpdateBanner}>
+              Update Banner
+            </Button>
+          ) : (
+            <Button variant="primary" onClick={handleAddBanner}>
+              Add Banner
+            </Button>
+          )}
+        </Modal.Footer>
+      </Modal>
+
+      {/* Image Upload Modal */}
+      <Modal show={showImageModal} onHide={() => setShowImageModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Upload Image</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div className="mb-3">
+            <input
+              type="file"
+              accept="image/*"
+              className="form-control"
+              onChange={handleImageChange}
+            />
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowImageModal(false)}>
+            Close
+          </Button>
+          <Button variant="primary" onClick={handleUploadImage}>
+            Upload Image
           </Button>
         </Modal.Footer>
       </Modal>
 
-      {/* Image Modal */}
-      <Modal show={showImageModal} onHide={() => setShowImageModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Manage Images</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Table bordered>
-            <thead>
-              <tr>
-                <th>Image</th>
-                <th>Update</th>
-                <th>Delete</th>
-              </tr>
-            </thead>
-            <tbody>
-              {projects[selectedProjectIndex]?.images.map(
-                (image, imageIndex) => (
-                  <tr key={imageIndex}>
-                    <td>
-                      <img
-                        src={image.url}
-                        alt={`Project Image ${imageIndex + 1}`}
-                        className="img-fluid"
-                        style={{ maxWidth: 100 }}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        ref={(el) => {
-                          if (!fileInputRefs.current[imageIndex]) {
-                            fileInputRefs.current[imageIndex] = el;
-                          }
-                        }}
-                        type="file"
-                        className="d-none"
-                        accept="image/*"
-                        onChange={(e) => handleImageUpdate(imageIndex, e)}
-                      />
-                      <Button
-                        variant="warning"
-                        onClick={() => handleFileInputTrigger(imageIndex)}
-                        className="mt-2"
-                        style={{ color: "#fff" }}
-                      >
-                        <RiEdit2Fill />
-                      </Button>
-                    </td>
-                    <td>
-                      <Button
-                        variant="danger"
-                        onClick={() => handleDeleteImage(imageIndex)}
-                      >
-                        <RiDeleteBin4Fill />
-                      </Button>
-                    </td>
-                  </tr>
-                )
-              )}
-            </tbody>
-          </Table>
-
-          {/* Add New Image */}
-          <div className="mt-3 d-flex flex-column">
-            <label htmlFor="newImage" className="form-label">
-              Add New Image
-            </label>
-            <input
-              type="file"
-              className="form-control d-none"
-              id="newImage"
-              accept="image/*"
-              onChange={handleAddImage}
-              ref={fileInputRefs}
-            />
-            <Button
-              variant="success"
-              className="mt-2"
-              onClick={() => fileInputRefs.current.click()}
-            >
-              <FaPlus /> Add Image
-            </Button>
-          </div>
-        </Modal.Body>
-      </Modal>
-      <div style={{ marginTop: "80vh" }}>
-        <Footer />
-      </div>
+      <Footer />
     </div>
   );
 }
